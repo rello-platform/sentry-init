@@ -100,9 +100,37 @@ Use the canonical platform slug where one exists (see `@rello-platform/slugs`):
 After migrating a repo to this package, confirm:
 
 1. `npx tsc --noEmit` passes.
-2. A deploy to staging triggers a synthetic error (debug route or intentional throw).
-3. The error lands in the Sentry dashboard with `repo: <slug>` tag attached.
+2. A deploy to staging triggers a synthetic error (debug route or intentional throw). See `Debug-route pattern` below.
+3. The error lands in the Sentry dashboard with `repo: <slug>` tag attached. The `repo` tag is the wiring proof — if it's missing, `initSentry(Sentry, { repo: "<slug>" })` never executed for that deploy.
 4. The error message/stack does NOT contain any lead email or phone number — the scrubber should have replaced them with `[email]` / `[phone]`.
+5. **Keyed-field redaction** — if the synthetic error uses `scope.setExtra("email", ...)` or `scope.setExtra("phone", ...)`, the Sentry dashboard should show those `extra.*` values as `"[redacted]"` (not the original string). The scrubber walks the full event recursively, not just the message/stack — keyed PII fields anywhere in the payload are replaced.
+
+### Debug-route pattern (`/api/<something>` — not `/api/_debug/*`)
+
+When writing a synthetic-error route in a Next.js app, avoid underscore-prefixed path segments — Next.js App Router silently excludes `_`-prefixed folders from routing, so `src/app/api/_debug/sentry-test/route.ts` returns 404 in prod. Use a flat, non-underscore path:
+
+```ts
+// src/app/api/sentry-smoke-test/route.ts  — NOT _debug/sentry-test
+import * as Sentry from "@sentry/nextjs";
+import { NextResponse } from "next/server";
+
+export async function GET(req: Request) {
+  const key = new URL(req.url).searchParams.get("key");
+  if (key !== "<your-hardcoded-UUID>") {
+    return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
+  Sentry.withScope((scope) => {
+    scope.setExtra("email", "bob@example.com");
+    scope.setExtra("phone", "+15559998888");
+    Sentry.captureException(new Error(
+      "sentry smoke test — alice@example.com +15551234567"
+    ));
+  });
+  return NextResponse.json({ ok: true });
+}
+```
+
+Three of the Next.js spokes (Harvest-Home, The-Drumbeat, MarketIntel) additionally require a middleware `PUBLIC_PATHS` entry for any new `/api/<foo>` route — otherwise the session-auth middleware 401/307s before the handler runs. See `APP-AUDIT-AGENT-PROTOCOL.md` §2.23 for the full per-repo table.
 
 ## Not in scope (v0.1.0)
 
