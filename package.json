@@ -1,0 +1,28 @@
+{
+  "name": "@rello-platform/sentry-init",
+  "version": "0.1.0",
+  "description": "Shared Sentry init for the Rello ecosystem — PII scrubbing, env-aware sampling, standard tags. Consumers bring their own @sentry/nextjs or @sentry/node.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "typescript": "^5.4.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "github:rello-platform/sentry-init"
+  },
+  "license": "UNLICENSED",
+  "private": true
+}
