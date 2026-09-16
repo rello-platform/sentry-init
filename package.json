@@ -13,7 +13,8 @@
   "scripts": {
     "compile": "tsc",
     "typecheck": "tsc --noEmit",
-    "prepublishOnly": "npm run compile"
+    "prepublishOnly": "npm run compile",
+    "hooks": "git config core.hooksPath .husky || true"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",
